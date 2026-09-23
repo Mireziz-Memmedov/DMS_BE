@@ -62,7 +62,7 @@ MIDDLEWARE = [
 
 CORS_ALLOWED_ORIGINS = [
     "https://mireziz-memmedov.github.io",
-    "https://probable-xylophone-4j64jxpgx5j6cjv4w.github.dev",
+    "https://probable-xylophone-4j64jxpgx5j6cjv4w-5500.app.github.dev",
 ]
 
 ROOT_URLCONF = "dms.urls"
