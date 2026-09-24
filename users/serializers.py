@@ -6,8 +6,15 @@ class LoginSerializer(TokenObtainPairSerializer):
     pass
 
 
-# class UserSerializer(serializers.ModelSerializer):
+class EmployeeSerializer(serializers.ModelSerializer):
 
-#     class Meta:
-#         model = User
-#         fields = "__all__"
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "username",
+            "first_name",
+            "last_name",
+            "position",
+            "email",
+        ]

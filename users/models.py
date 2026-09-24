@@ -4,6 +4,11 @@ from django.db import models
 
 class User(AbstractUser):
 
+    position = models.CharField(
+        max_length=150,
+        blank=True
+    )
+
     class Meta:
         db_table = 'user'
 
