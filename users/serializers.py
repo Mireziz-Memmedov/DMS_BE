@@ -3,7 +3,22 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import User, Conversation, Message
 
 class LoginSerializer(TokenObtainPairSerializer):
-    pass
+
+    def validate(self, attrs):
+
+        data = super().validate(attrs)
+
+        data["user"] = {
+            "id": self.user.id,
+            "username": self.user.username,
+            "first_name": self.user.first_name,
+            "last_name": self.user.last_name,
+            "email": self.user.email,
+            "position": self.user.position,
+            "last_seen": self.user.last_seen,
+        }
+
+        return data
 
 
 class EmployeeSerializer(serializers.ModelSerializer):
