@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .models import User
+from .models import User, Conversation, Message
 
 class LoginSerializer(TokenObtainPairSerializer):
     pass
@@ -17,4 +17,52 @@ class EmployeeSerializer(serializers.ModelSerializer):
             "last_name",
             "position",
             "email",
+        ]
+
+class UserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "username",
+            "first_name",
+            "last_name",
+            "position",
+            "last_seen",
+        ]
+
+
+class ConversationSerializer(serializers.ModelSerializer):
+
+    participants = UserSerializer(
+        many=True,
+        read_only=True
+    )
+
+    class Meta:
+        model = Conversation
+        fields = [
+            "id",
+            "participants",
+            "created_at",
+            "updated_at",
+        ]
+
+
+class MessageSerializer(serializers.ModelSerializer):
+
+    sender = UserSerializer(
+        read_only=True
+    )
+
+    class Meta:
+        model = Message
+        fields = [
+            "id",
+            "conversation",
+            "sender",
+            "content",
+            "is_read",
+            "created_at",
         ]
