@@ -1,3 +1,5 @@
+from django.db.models import Count
+
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -51,8 +53,19 @@ def conversations(request):
 @permission_classes([IsAuthenticated])
 def messages(request, conversation_id):
 
+    conversation = Conversation.objects.filter(
+        id=conversation_id,
+        participants=request.user
+    ).first()
+
+    if not conversation:
+        return Response(
+            {"detail": "Söhbət tapılmadı."},
+            status=404
+        )
+
     messages = Message.objects.filter(
-        conversation_id=conversation_id
+        conversation=conversation
     ).order_by("created_at")
 
     serializer = MessageSerializer(
@@ -67,7 +80,10 @@ def messages(request, conversation_id):
 @permission_classes([IsAuthenticated])
 def create_conversation(request):
 
-    participant_ids = request.data.get("participants", [])
+    participant_ids = request.data.get(
+        "participants",
+        []
+    )
 
     if not participant_ids:
         return Response(
@@ -75,23 +91,69 @@ def create_conversation(request):
             status=400
         )
 
-    participants = User.objects.filter(
-        id__in=participant_ids
+    participant_ids = [
+        int(user_id)
+        for user_id in participant_ids
+        if str(user_id).isdigit()
+    ]
+
+    participant_ids = [
+        user_id
+        for user_id in participant_ids
+        if user_id != request.user.id
+    ]
+
+    if len(participant_ids) != 1:
+        return Response(
+            {
+                "detail":
+                "Hazırda yalnız 1-ə-1 söhbət yaratmaq olar."
+            },
+            status=400
+        )
+
+    other_user = User.objects.filter(
+        id=participant_ids[0]
+    ).first()
+
+    if not other_user:
+        return Response(
+            {"detail": "Əməkdaş tapılmadı."},
+            status=404
+        )
+
+    conversation = (
+        Conversation.objects
+        .filter(participants=request.user)
+        .filter(participants=other_user)
+        .annotate(
+            participant_count=Count("participants")
+        )
+        .filter(participant_count=2)
+        .first()
     )
 
-    if not participants.exists():
+    if conversation:
+
+        serializer = ConversationSerializer(
+            conversation
+        )
+
         return Response(
-            {"detail": "İştirakçılar tapılmadı."},
-            status=400
+            serializer.data,
+            status=200
         )
 
     conversation = Conversation.objects.create()
 
-    conversation.participants.set(participants)
+    conversation.participants.set([
+        request.user,
+        other_user
+    ])
 
-    conversation.participants.add(request.user)
-
-    serializer = ConversationSerializer(conversation)
+    serializer = ConversationSerializer(
+        conversation
+    )
 
     return Response(
         serializer.data,
@@ -103,7 +165,10 @@ def create_conversation(request):
 @permission_classes([IsAuthenticated])
 def create_message(request, conversation_id):
 
-    content = request.data.get("content", "").strip()
+    content = request.data.get(
+        "content",
+        ""
+    ).strip()
 
     if not content:
         return Response(
@@ -128,7 +193,9 @@ def create_message(request, conversation_id):
         content=content
     )
 
-    serializer = MessageSerializer(message)
+    serializer = MessageSerializer(
+        message
+    )
 
     return Response(
         serializer.data,
