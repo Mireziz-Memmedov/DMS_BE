@@ -39,7 +39,11 @@ def employees(request):
 @permission_classes([IsAuthenticated])
 def conversations(request):
 
-    conversations = request.user.conversations.all()
+    conversations = (
+        request.user.conversations
+        .all()
+        .order_by("-updated_at")
+    )
 
     serializer = ConversationSerializer(
         conversations,
