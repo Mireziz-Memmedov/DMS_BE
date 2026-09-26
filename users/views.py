@@ -101,17 +101,14 @@ def create_conversation(request):
         if str(user_id).isdigit()
     ]
 
-    participant_ids = [
-        user_id
-        for user_id in participant_ids
-        if user_id != request.user.id
-    ]
+    # Özünü silmirik.
+    # Sonradan özünlə söhbət üçün lazım olacaq.
 
     if len(participant_ids) != 1:
         return Response(
             {
                 "detail":
-                "Hazırda yalnız 1-ə-1 söhbət yaratmaq olar."
+                "Yalnız bir əməkdaş seçilə bilər."
             },
             status=400
         )
@@ -126,6 +123,45 @@ def create_conversation(request):
             status=404
         )
 
+    # Özünlə söhbət
+    if other_user.id == request.user.id:
+
+        conversation = (
+            Conversation.objects
+            .filter(participants=request.user)
+            .annotate(
+                participant_count=Count("participants")
+            )
+            .filter(participant_count=1)
+            .first()
+        )
+
+        if conversation:
+            serializer = ConversationSerializer(
+                conversation
+            )
+
+            return Response(
+                serializer.data,
+                status=200
+            )
+
+        conversation = Conversation.objects.create()
+
+        conversation.participants.set([
+            request.user
+        ])
+
+        serializer = ConversationSerializer(
+            conversation
+        )
+
+        return Response(
+            serializer.data,
+            status=201
+        )
+
+    # Qarşı tərəflə mövcud söhbəti tap
     conversation = (
         Conversation.objects
         .filter(participants=request.user)
@@ -137,6 +173,7 @@ def create_conversation(request):
         .first()
     )
 
+    # Varsa yenisini yaratmır
     if conversation:
 
         serializer = ConversationSerializer(
@@ -148,6 +185,7 @@ def create_conversation(request):
             status=200
         )
 
+    # Yoxdursa yeni conversation yaradır
     conversation = Conversation.objects.create()
 
     conversation.participants.set([
