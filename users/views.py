@@ -172,25 +172,24 @@ def create_conversation(request):
     # MÖVCUD SÖHBƏTİ TAP
     # =========================
 
-    conversation = (
-        Conversation.objects
-        .filter(
-            participants=request.user
-        )
-        .filter(
-            participants=other_user
-        )
-        .annotate(
-            participant_count=Count(
-                "participants",
-                distinct=True
+    conversation = None
+
+    for item in Conversation.objects.filter(
+        participants=request.user
+    ):
+        participant_ids = set(
+            item.participants.values_list(
+                "id",
+                flat=True
             )
         )
-        .filter(
-            participant_count=2
-        )
-        .first()
-    )
+
+        if participant_ids == {
+            request.user.id,
+            other_user.id
+        }:
+            conversation = item
+            break
 
     if conversation:
 
