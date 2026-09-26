@@ -84,6 +84,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 "username": user.username,
                 "first_name": user.first_name,
                 "last_name": user.last_name,
+                "position": user.position,
+                "last_seen": user.last_seen.isoformat()
+                if user.last_seen else None,
             },
             "created_at": message.created_at.isoformat(),
         }
