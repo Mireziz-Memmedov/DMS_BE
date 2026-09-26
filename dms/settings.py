@@ -179,3 +179,9 @@ cloudinary.config(
 )
 
 AUTH_USER_MODEL = 'users.User'
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
