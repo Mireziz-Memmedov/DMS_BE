@@ -128,19 +128,22 @@ def create_conversation(request):
 
         conversation = (
             Conversation.objects
-            .filter(participants=request.user)
+            .filter(
+                participants=request.user
+            )
             .annotate(
                 participant_count=Count(
                     "participants",
                     distinct=True
                 )
             )
-            .filter(participant_count=1)
+            .filter(
+                participant_count=1
+            )
             .first()
         )
 
         if conversation:
-
             serializer = ConversationSerializer(
                 conversation
             )
@@ -171,21 +174,23 @@ def create_conversation(request):
 
     conversation = (
         Conversation.objects
-        .filter(participants=request.user)
-        .filter(participants=other_user)
+        .filter(
+            participants=request.user
+        )
+        .filter(
+            participants=other_user
+        )
         .annotate(
             participant_count=Count(
                 "participants",
                 distinct=True
             )
         )
-        .filter(participant_count=2)
+        .filter(
+            participant_count=2
+        )
         .first()
     )
-
-    # =========================
-    # VARSA YENİ YARATMA
-    # =========================
 
     if conversation:
 
@@ -199,7 +204,7 @@ def create_conversation(request):
         )
 
     # =========================
-    # YOXDURSA YARAT
+    # YENİ SÖHBƏT YARAT
     # =========================
 
     conversation = Conversation.objects.create()
