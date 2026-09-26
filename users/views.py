@@ -84,6 +84,9 @@ def messages(request, conversation_id):
 @permission_classes([IsAuthenticated])
 def create_conversation(request):
 
+    print("LOGIN USER:", request.user.id, request.user.username)
+    print("REQUEST DATA:", request.data)
+    
     participant_ids = request.data.get(
         "participants",
         []
