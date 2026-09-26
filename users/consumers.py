@@ -76,6 +76,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             content=content
         )
 
+        conversation.save()
+
         return {
             "id": message.id,
             "content": message.content,
