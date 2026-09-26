@@ -101,9 +101,6 @@ def create_conversation(request):
         if str(user_id).isdigit()
     ]
 
-    # Özünü silmirik.
-    # Sonradan özünlə söhbət üçün lazım olacaq.
-
     if len(participant_ids) != 1:
         return Response(
             {
@@ -123,20 +120,27 @@ def create_conversation(request):
             status=404
         )
 
-    # Özünlə söhbət
+    # =========================
+    # ÖZÜNLƏ SÖHBƏT
+    # =========================
+
     if other_user.id == request.user.id:
 
         conversation = (
             Conversation.objects
             .filter(participants=request.user)
             .annotate(
-                participant_count=Count("participants")
+                participant_count=Count(
+                    "participants",
+                    distinct=True
+                )
             )
             .filter(participant_count=1)
             .first()
         )
 
         if conversation:
+
             serializer = ConversationSerializer(
                 conversation
             )
@@ -161,19 +165,28 @@ def create_conversation(request):
             status=201
         )
 
-    # Qarşı tərəflə mövcud söhbəti tap
+    # =========================
+    # MÖVCUD SÖHBƏTİ TAP
+    # =========================
+
     conversation = (
         Conversation.objects
         .filter(participants=request.user)
         .filter(participants=other_user)
         .annotate(
-            participant_count=Count("participants")
+            participant_count=Count(
+                "participants",
+                distinct=True
+            )
         )
         .filter(participant_count=2)
         .first()
     )
 
-    # Varsa yenisini yaratmır
+    # =========================
+    # VARSA YENİ YARATMA
+    # =========================
+
     if conversation:
 
         serializer = ConversationSerializer(
@@ -185,7 +198,10 @@ def create_conversation(request):
             status=200
         )
 
-    # Yoxdursa yeni conversation yaradır
+    # =========================
+    # YOXDURSA YARAT
+    # =========================
+
     conversation = Conversation.objects.create()
 
     conversation.participants.set([
