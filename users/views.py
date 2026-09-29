@@ -68,15 +68,24 @@ def messages(request, conversation_id):
             status=404
         )
 
-    messages = (
-        Message.objects
-        .filter(
-            conversation=conversation
-        )
-        .order_by("-created_at")[:20]
+    messages_queryset = Message.objects.filter(
+        conversation=conversation
     )
 
-    messages = list(reversed(messages))
+    before = request.GET.get("before")
+
+    if before:
+
+        messages_queryset = messages_queryset.filter(
+            id__lt=before
+        )
+
+    messages = list(
+        messages_queryset
+        .order_by("-id")[:20]
+    )
+
+    messages.reverse()
 
     serializer = MessageSerializer(
         messages,
