@@ -36,12 +36,27 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
 
-        await self.update_last_seen()
-
 
     async def receive(self, text_data):
 
         data = json.loads(text_data)
+
+        message_type = data.get("type")
+
+        # =========================
+        # PRESENCE / HEARTBEAT
+        # =========================
+
+        if message_type == "presence":
+
+            await self.update_last_seen()
+
+            return
+
+
+        # =========================
+        # MESSAGE
+        # =========================
 
         message_text = data.get(
             "message",
@@ -51,11 +66,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if not message_text:
             return
 
-        await self.update_last_seen()
 
         message = await self.create_message(
             message_text
         )
+
+        await self.update_last_seen()
 
         await self.channel_layer.group_send(
             self.room_group_name,
