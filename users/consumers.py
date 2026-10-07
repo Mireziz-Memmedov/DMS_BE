@@ -43,6 +43,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         message_type = data.get("type")
 
+
         # =========================
         # PRESENCE / HEARTBEAT
         # =========================
@@ -67,11 +68,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return
 
 
+        client_id = data.get("client_id")
+
+
         message = await self.create_message(
-            message_text
+            message_text,
+            client_id
         )
 
+
         await self.update_last_seen()
+
 
         await self.channel_layer.group_send(
             self.room_group_name,
@@ -106,7 +113,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
 
     @database_sync_to_async
-    def create_message(self, content):
+    def create_message(
+        self,
+        content,
+        client_id=None
+    ):
 
         conversation = Conversation.objects.get(
             id=self.conversation_id
@@ -114,17 +125,24 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         user = self.scope["user"]
 
+
         message = Message.objects.create(
             conversation=conversation,
             sender=user,
             content=content
         )
 
+
         conversation.save()
+
 
         return {
             "id": message.id,
+
+            "client_id": client_id,
+
             "content": message.content,
+
             "sender": {
                 "id": user.id,
                 "username": user.username,
@@ -137,7 +155,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     else None
                 ),
             },
-            "created_at": (
-                message.created_at.isoformat()
-            ),
+
+            "created_at": message.created_at.isoformat(),
         }
