@@ -1,5 +1,6 @@
 import json
 
+from django.utils import timezone
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 
@@ -10,9 +11,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
 
-        self.conversation_id = self.scope["url_route"]["kwargs"]["conversation_id"]
+        self.conversation_id = (
+            self.scope["url_route"]["kwargs"]["conversation_id"]
+        )
 
-        self.room_group_name = f"chat_{self.conversation_id}"
+        self.room_group_name = (
+            f"chat_{self.conversation_id}"
+        )
 
         await self.channel_layer.group_add(
             self.room_group_name,
@@ -20,6 +25,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
         await self.accept()
+
+        await self.update_last_seen()
 
 
     async def disconnect(self, close_code):
@@ -29,15 +36,22 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
 
+        await self.update_last_seen()
+
 
     async def receive(self, text_data):
 
         data = json.loads(text_data)
 
-        message_text = data.get("message", "").strip()
+        message_text = data.get(
+            "message",
+            ""
+        ).strip()
 
         if not message_text:
             return
+
+        await self.update_last_seen()
 
         message = await self.create_message(
             message_text
@@ -59,6 +73,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 "message": event["message"]
             })
         )
+
+
+    @database_sync_to_async
+    def update_last_seen(self):
+
+        user = self.scope["user"]
+
+        if user.is_authenticated:
+
+            user.last_seen = timezone.now()
+
+            user.save(
+                update_fields=["last_seen"]
+            )
 
 
     @database_sync_to_async
@@ -87,8 +115,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 "first_name": user.first_name,
                 "last_name": user.last_name,
                 "position": user.position,
-                "last_seen": user.last_seen.isoformat()
-                if user.last_seen else None,
+                "last_seen": (
+                    user.last_seen.isoformat()
+                    if user.last_seen
+                    else None
+                ),
             },
-            "created_at": message.created_at.isoformat(),
+            "created_at": (
+                message.created_at.isoformat()
+            ),
         }

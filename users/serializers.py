@@ -1,3 +1,4 @@
+from django.utils import timezone
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import User, Conversation, Message
@@ -36,6 +37,8 @@ class EmployeeSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
 
+    is_online = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = [
@@ -45,7 +48,19 @@ class UserSerializer(serializers.ModelSerializer):
             "last_name",
             "position",
             "last_seen",
+            "is_online",
         ]
+    
+    def get_is_online(self, obj):
+
+        if not obj.last_seen:
+            return False
+
+        seconds = (
+            timezone.now() - obj.last_seen
+        ).total_seconds()
+
+        return seconds < 60
 
 
 class ConversationSerializer(serializers.ModelSerializer):
