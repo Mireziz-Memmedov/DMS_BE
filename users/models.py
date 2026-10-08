@@ -53,6 +53,13 @@ class Message(models.Model):
 
     content = models.TextField()
 
+    client_id = models.CharField(
+        max_length=100,
+        unique=True,
+        null=True,
+        blank=True
+    )
+
     is_read = models.BooleanField(
         default=False
     )

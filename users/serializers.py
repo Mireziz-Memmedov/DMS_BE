@@ -93,6 +93,7 @@ class MessageSerializer(serializers.ModelSerializer):
             "conversation",
             "sender",
             "content",
+            "client_id",
             "is_read",
             "created_at",
         ]

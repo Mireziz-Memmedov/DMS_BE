@@ -70,6 +70,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         client_id = data.get("client_id")
 
+        if client_id:
+            client_id = str(client_id).strip()
+
 
         message = await self.create_message(
             message_text,
@@ -126,10 +129,64 @@ class ChatConsumer(AsyncWebsocketConsumer):
         user = self.scope["user"]
 
 
+        # =========================
+        # IDEMPOTENCY
+        # =========================
+        #
+        # Eyni client_id ilə mesaj artıq
+        # yaradılıbsa, ikinci dəfə yaratma.
+        #
+
+        if client_id:
+
+            existing_message = (
+                Message.objects
+                .select_related(
+                    "sender"
+                )
+                .filter(
+                    client_id=client_id
+                )
+                .first()
+            )
+
+            if existing_message:
+
+                return {
+                    "id": existing_message.id,
+
+                    "client_id": existing_message.client_id,
+
+                    "content": existing_message.content,
+
+                    "sender": {
+                        "id": existing_message.sender.id,
+                        "username": existing_message.sender.username,
+                        "first_name": existing_message.sender.first_name,
+                        "last_name": existing_message.sender.last_name,
+                        "position": existing_message.sender.position,
+                        "last_seen": (
+                            existing_message.sender.last_seen.isoformat()
+                            if existing_message.sender.last_seen
+                            else None
+                        ),
+                    },
+
+                    "created_at": (
+                        existing_message.created_at.isoformat()
+                    ),
+                }
+
+
+        # =========================
+        # CREATE MESSAGE
+        # =========================
+
         message = Message.objects.create(
             conversation=conversation,
             sender=user,
-            content=content
+            content=content,
+            client_id=client_id
         )
 
 
@@ -139,7 +196,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         return {
             "id": message.id,
 
-            "client_id": client_id,
+            "client_id": message.client_id,
 
             "content": message.content,
 

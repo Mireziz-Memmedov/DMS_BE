@@ -264,11 +264,53 @@ def create_message(request, conversation_id):
             status=404
         )
 
+    client_id = request.data.get(
+        "client_id"
+    )
+
+    if client_id:
+        client_id = str(
+            client_id
+        ).strip()
+
+
+    # =========================
+    # IDEMPOTENCY
+    # =========================
+
+    if client_id:
+
+        existing_message = (
+            Message.objects
+            .filter(
+                client_id=client_id
+            )
+            .first()
+        )
+
+        if existing_message:
+
+            serializer = MessageSerializer(
+                existing_message
+            )
+
+            return Response(
+                serializer.data,
+                status=200
+            )
+
+
+    # =========================
+    # CREATE MESSAGE
+    # =========================
+
     message = Message.objects.create(
         conversation=conversation,
         sender=request.user,
-        content=content
+        content=content,
+        client_id=client_id
     )
+
 
     serializer = MessageSerializer(
         message
