@@ -38,12 +38,10 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
-
     "rest_framework",
     "corsheaders",
     "cloudinary",
     "cloudinary_storage",
-
     "channels",
     "users",
 ]
@@ -92,21 +90,19 @@ ASGI_APPLICATION = "dms.asgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv('PGDATABASE'),
-        "USER": os.getenv('PGUSER'),
-        "HOST": os.getenv('PGHOST'),
-        "PASSWORD": os.getenv('PGPASSWORD'),
-        "PORT": os.getenv('PGPORT'),
+        "NAME": os.getenv("PGDATABASE"),
+        "USER": os.getenv("PGUSER"),
+        "HOST": os.getenv("PGHOST"),
+        "PASSWORD": os.getenv("PGPASSWORD"),
+        "PORT": os.getenv("PGPORT"),
         "OPTIONS": {
-            'sslmode': 'require',
-        }
+            "sslmode": "require",
+        },
     }
 }
 
 REST_FRAMEWORK = {
-    "DEFAULT_RENDERER_CLASSES": (
-        "rest_framework.renderers.JSONRenderer",
-    ),
+    "DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",),
     "DEFAULT_PARSER_CLASSES": (
         "rest_framework.parsers.JSONParser",
         "rest_framework.parsers.MultiPartParser",
@@ -115,9 +111,7 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
-    "DEFAULT_PERMISSION_CLASSES": (
-        "rest_framework.permissions.IsAuthenticated",
-    ),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
 }
 
 
@@ -168,29 +162,28 @@ MAILERS = {
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
 
 cloudinary.config(
     cloud_name=os.getenv("CLOUD_NAME"),
     api_key=os.getenv("CLOUDINARY_API_KEY"),
     api_secret=os.getenv("CLOUDINARY_API_SECRET"),
-    secure=True
+    secure=True,
 )
 
-AUTH_USER_MODEL = 'users.User'
+AUTH_USER_MODEL = "users.User"
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
 
 # CHANNEL_LAYERS = {
 #     "default": {
-#         "BACKEND": "channels.layers.InMemoryChannelLayer",
+#         "BACKEND": "channels_redis.core.RedisChannelLayer",
+#         "CONFIG": {
+#             "hosts": [os.environ["REDIS_URL"]],
+#         },
 #     },
 # }
-
-CHANNEL_LAYERS = {
-"default": {
-"BACKEND": "channels_redis.core.RedisChannelLayer",
-"CONFIG": {
-"hosts": [os.environ["REDIS_URL"]],
-},
-},
-}
-
