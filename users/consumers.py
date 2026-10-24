@@ -283,7 +283,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message_type = data.get("type")
 
         # =====================================================
-        # PRESENCE / HEARTBEAT
+        # PRESENCE
         # =====================================================
 
         if message_type == "presence":
@@ -331,6 +331,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         client_id = data.get("client_id")
 
         if client_id:
+
             client_id = str(client_id).strip()
 
             if not client_id:
@@ -389,7 +390,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         }
 
         # =====================================================
-        # CALL OFFER / ANSWER
+        # OFFER / ANSWER
         # =====================================================
 
         if message_type in ("call_offer", "call_answer"):
@@ -406,7 +407,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
             sdp = description.get("sdp")
 
-            if not isinstance(sdp, str) or not sdp:
+            if not isinstance(sdp, str) or not sdp.strip():
                 return
 
             signal["description"] = {
@@ -431,7 +432,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
             signal["candidate"] = candidate
 
         # =====================================================
-        # FORWARD CALL SIGNAL
+        # REJECT / END / BUSY
+        # =====================================================
+
+        elif message_type in ("call_reject", "call_end", "call_busy"):
+
+            # Bu siqnallar üçün əlavə SDP tələb olunmur.
+            pass
+
+        # =====================================================
+        # FORWARD SIGNAL
         # =====================================================
 
         await self.channel_layer.group_send(
