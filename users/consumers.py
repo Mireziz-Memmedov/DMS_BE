@@ -373,8 +373,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
 
-        self.conversation_id = self.scope["url_route"]["kwargs"]["conversation_id"]
         self.user = self.scope["user"]
+        self.conversation_id = self.scope["url_route"]["kwargs"]["conversation_id"]
 
         if not self.user.is_authenticated:
             await self.close()
@@ -385,15 +385,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return
 
         self.room_group_name = f"chat_{self.conversation_id}"
-        self.user_group_name = f"user_{self.user.id}"
 
         await self.channel_layer.group_add(
             self.room_group_name,
-            self.channel_name,
-        )
-
-        await self.channel_layer.group_add(
-            self.user_group_name,
             self.channel_name,
         )
 
@@ -408,14 +402,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def disconnect(self, close_code):
 
         if hasattr(self, "room_group_name"):
+
             await self.channel_layer.group_discard(
                 self.room_group_name,
-                self.channel_name,
-            )
-
-        if hasattr(self, "user_group_name"):
-            await self.channel_layer.group_discard(
-                self.user_group_name,
                 self.channel_name,
             )
 
@@ -427,6 +416,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         try:
             data = json.loads(text_data)
+
         except (json.JSONDecodeError, TypeError):
             return
 
@@ -440,24 +430,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # =====================================================
 
         if message_type == "presence":
+
             await self.update_last_seen()
-            return
 
-        # =====================================================
-        # AUDIO CALL SIGNALING
-        # =====================================================
-
-        call_types = {
-            "call_offer",
-            "call_answer",
-            "ice_candidate",
-            "call_reject",
-            "call_end",
-            "call_busy",
-        }
-
-        if message_type in call_types:
-            await self.handle_call_signal(message_type, data)
             return
 
         # =====================================================
@@ -480,6 +455,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         client_id = data.get("client_id")
 
         if client_id is not None:
+
             client_id = str(client_id).strip()
 
             if not client_id:
@@ -518,113 +494,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
     # =========================================================
-    # CALL SIGNAL HANDLER
-    # =========================================================
-
-    async def handle_call_signal(self, message_type, data):
-
-        target_user_id = data.get("to_user_id")
-
-        if target_user_id is None:
-            return
-
-        try:
-            target_user_id = int(target_user_id)
-        except (TypeError, ValueError):
-            return
-
-        if target_user_id == self.user.id:
-            return
-
-        # Hədəf istifadəçi bu söhbətin iştirakçısı olmalıdır.
-        if not await self.is_user_conversation_participant(target_user_id):
-            return
-
-        signal = {
-            "type": message_type,
-            "from_user_id": self.user.id,
-            "to_user_id": target_user_id,
-        }
-
-        # =====================================================
-        # OFFER / ANSWER
-        # =====================================================
-
-        if message_type in ("call_offer", "call_answer"):
-
-            description = data.get("description")
-
-            if not isinstance(description, dict):
-                return
-
-            expected_type = "offer" if message_type == "call_offer" else "answer"
-
-            if description.get("type") != expected_type:
-                return
-
-            sdp = description.get("sdp")
-
-            if not isinstance(sdp, str) or not sdp.strip():
-                return
-
-            signal["description"] = {
-                "type": expected_type,
-                "sdp": sdp,
-            }
-
-        # =====================================================
-        # ICE CANDIDATE
-        # =====================================================
-
-        elif message_type == "ice_candidate":
-
-            candidate = data.get("candidate")
-
-            if not isinstance(candidate, dict):
-                return
-
-            if not isinstance(candidate.get("candidate"), str):
-                return
-
-            signal["candidate"] = candidate
-
-        # =====================================================
-        # REJECT / END / BUSY
-        # =====================================================
-
-        elif message_type in (
-            "call_reject",
-            "call_end",
-            "call_busy",
-        ):
-            pass
-
-        # =====================================================
-        # SEND TO TARGET USER
-        # =====================================================
-
-        await self.channel_layer.group_send(
-            f"user_{target_user_id}",
-            {
-                "type": "call_signal",
-                "signal": signal,
-            },
-        )
-
-    # =========================================================
-    # CALL SIGNAL EVENT
-    # =========================================================
-
-    async def call_signal(self, event):
-
-        signal = event["signal"]
-
-        if signal["to_user_id"] != self.user.id:
-            return
-
-        await self.send(text_data=json.dumps(signal))
-
-    # =========================================================
     # UPDATE LAST SEEN
     # =========================================================
 
@@ -634,6 +503,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         user = self.scope["user"]
 
         if user.is_authenticated:
+
             user.last_seen = timezone.now()
 
             user.save(update_fields=["last_seen"])
@@ -649,24 +519,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             id=self.conversation_id,
             participants=self.user,
         ).exists()
-
-    # =========================================================
-    # CHECK CALL TARGET
-    # =========================================================
-
-    @database_sync_to_async
-    def is_user_conversation_participant(self, user_id):
-
-        return (
-            Conversation.objects.filter(
-                id=self.conversation_id,
-                participants=self.user,
-            )
-            .filter(
-                participants__id=user_id,
-            )
-            .exists()
-        )
 
     # =========================================================
     # CREATE MESSAGE
@@ -697,24 +549,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
             if existing_message:
 
-                sender = existing_message.sender
-
-                return {
-                    "id": existing_message.id,
-                    "client_id": existing_message.client_id,
-                    "content": existing_message.content,
-                    "sender": {
-                        "id": sender.id,
-                        "username": sender.username,
-                        "first_name": sender.first_name,
-                        "last_name": sender.last_name,
-                        "position": sender.position,
-                        "last_seen": (
-                            sender.last_seen.isoformat() if sender.last_seen else None
-                        ),
-                    },
-                    "created_at": (existing_message.created_at.isoformat()),
-                }
+                return self.serialize_message(existing_message)
 
         # =====================================================
         # CREATE MESSAGE
@@ -729,17 +564,29 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         conversation.save()
 
+        return self.serialize_message(message)
+
+    # =========================================================
+    # SERIALIZE MESSAGE
+    # =========================================================
+
+    def serialize_message(self, message):
+
+        sender = message.sender
+
         return {
             "id": message.id,
             "client_id": message.client_id,
             "content": message.content,
             "sender": {
-                "id": user.id,
-                "username": user.username,
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-                "position": user.position,
-                "last_seen": (user.last_seen.isoformat() if user.last_seen else None),
+                "id": sender.id,
+                "username": sender.username,
+                "first_name": sender.first_name,
+                "last_name": sender.last_name,
+                "position": sender.position,
+                "last_seen": (
+                    sender.last_seen.isoformat() if sender.last_seen else None
+                ),
             },
             "created_at": message.created_at.isoformat(),
         }
