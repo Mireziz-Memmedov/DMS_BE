@@ -5,49 +5,25 @@ from .views import LoginView
 
 from rest_framework_simplejwt.views import TokenRefreshView
 
-
 urlpatterns = [
-
+    path("login/", LoginView.as_view(), name="login"),
+    path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("employees/", views.employees, name="employees"),
+    path("conversations/", views.conversations, name="conversations"),
     path(
-        "login/",
-        LoginView.as_view(),
-        name="login"
+        "conversations/create/", views.create_conversation, name="create_conversation"
     ),
-
     path(
-        "token/refresh/",
-        TokenRefreshView.as_view(),
-        name="token_refresh"
+        "conversations/<int:conversation_id>/messages/", views.messages, name="messages"
     ),
-
-    path(
-        "employees/",
-        views.employees,
-        name="employees"
-    ),
-
-    path(
-        "conversations/",
-        views.conversations,
-        name="conversations"
-    ),
-
-    path(
-        "conversations/create/",
-        views.create_conversation,
-        name="create_conversation"
-    ),
-
-    path(
-        "conversations/<int:conversation_id>/messages/",
-        views.messages,
-        name="messages"
-    ),
-
     path(
         "conversations/<int:conversation_id>/messages/create/",
         views.create_message,
-        name="create_message"
+        name="create_message",
     ),
-
+    path(
+        "conversations/<int:conversation_id>/calls/create/",
+        views.create_call,
+        name="create_call",
+    ),
 ]

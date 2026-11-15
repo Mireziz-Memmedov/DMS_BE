@@ -95,5 +95,7 @@ class MessageSerializer(serializers.ModelSerializer):
             "content",
             "client_id",
             "is_read",
+            "message_type",
+            "call_duration",
             "created_at",
         ]

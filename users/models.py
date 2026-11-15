@@ -64,6 +64,20 @@ class Message(models.Model):
         default=False
     )
 
+    message_type = models.CharField(
+        max_length = 10,
+        choices = [
+            ('text', 'Text'),
+            ('call', 'Call'),
+        ],
+        default = 'text'
+    )
+
+    call_duration = models.PositiveIntegerField(
+        null = True,
+        blank = True
+    )
+
     created_at = models.DateTimeField(
         auto_now_add=True
     )

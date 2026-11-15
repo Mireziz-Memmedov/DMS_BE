@@ -230,5 +230,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     sender.last_seen.isoformat() if sender.last_seen else None
                 ),
             },
+            "message_type": message.message_type,
+            "call_duration": message.call_duration,
             "created_at": message.created_at.isoformat(),
         }
