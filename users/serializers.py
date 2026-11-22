@@ -3,6 +3,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import User, Conversation, Message
 
+
 class LoginSerializer(TokenObtainPairSerializer):
 
     def validate(self, attrs):
@@ -35,6 +36,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
             "email",
         ]
 
+
 class UserSerializer(serializers.ModelSerializer):
 
     is_online = serializers.SerializerMethodField()
@@ -50,41 +52,20 @@ class UserSerializer(serializers.ModelSerializer):
             "last_seen",
             "is_online",
         ]
-    
+
     def get_is_online(self, obj):
 
         if not obj.last_seen:
             return False
 
-        seconds = (
-            timezone.now() - obj.last_seen
-        ).total_seconds()
+        seconds = (timezone.now() - obj.last_seen).total_seconds()
 
         return seconds < 60
 
 
-class ConversationSerializer(serializers.ModelSerializer):
-
-    participants = UserSerializer(
-        many=True,
-        read_only=True
-    )
-
-    class Meta:
-        model = Conversation
-        fields = [
-            "id",
-            "participants",
-            "created_at",
-            "updated_at",
-        ]
-
-
 class MessageSerializer(serializers.ModelSerializer):
 
-    sender = UserSerializer(
-        read_only=True
-    )
+    sender = UserSerializer(read_only=True)
 
     class Meta:
         model = Message
@@ -99,3 +80,28 @@ class MessageSerializer(serializers.ModelSerializer):
             "call_duration",
             "created_at",
         ]
+
+
+class ConversationSerializer(serializers.ModelSerializer):
+
+    participants = UserSerializer(many=True, read_only=True)
+
+    last_message = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Conversation
+        fields = [
+            "id",
+            "participants",
+            "created_at",
+            "updated_at",
+            "last_message",
+        ]
+
+    def get_last_message(self, obj):
+        message = obj.messages.order_by("-created_at").first()
+
+        if not message:
+            return None
+
+        return MessageSerializer(message).data
