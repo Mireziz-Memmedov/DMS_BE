@@ -100,20 +100,19 @@ def create_conversation(request):
     if other_user.id == request.user.id:
 
         conversation = (
-            Conversation.objects.filter(participants=request.user)
-            .annotate(participant_count=Count("participants", distinct=True))
-            .filter(participant_count=1)
+            Conversation.objects.annotate(
+                participant_count=Count("participants", distinct=True)
+            )
+            .filter(participants=request.user, participant_count=1)
             .first()
         )
 
         if conversation:
             serializer = ConversationSerializer(conversation)
-
             return Response(serializer.data, status=200)
 
         conversation = Conversation.objects.create()
-
-        conversation.participants.set([request.user])
+        conversation.participants.add(request.user)
 
         serializer = ConversationSerializer(conversation)
 
